@@ -33,30 +33,20 @@ Devils).
 ``` r
 # Read in data from JSON source
 
+read_json<-function(root_url,params){
+  json_file <- paste0(root_url,params)
+  source_data <- fromJSON(json_file)
+  franchise_df <- as.data.frame(source_data$data) #Convert to data frame
+  return(franchise_df)
+}
 root_url <- 'https://records.nhl.com/site/api'
-json_file <- (paste0(root_url,'/franchise'))
-source_data <- fromJSON(json_file)
-franchise_df <- as.data.frame(source_data$data) #Convert to data frame
-
-json_file <- (paste0(root_url,'/franchise-team-totals'))
-source_data <- fromJSON(json_file)
-franchise_team_total <- as.data.frame(source_data$data) #Convert to data frame
-franchise_team_total$gameTypeId <- as.factor(franchise_team_total$gameTypeId)
-
+franchise_df <- read_json(root_url,'/franchise')
+franchise_team_total <- read_json(root_url,'/franchise-team-totals')
 
 franchise_id=23
-json_file <- (paste0(root_url,'/franchise-season-records?cayenneExp=franchiseId=',franchise_id))
-source_data <- fromJSON(json_file)
-franchise_team_season <- as.data.frame(source_data$data) #Convert to data frame
-
-
-json_file <- (paste0(root_url,'/franchise-goalie-records?cayenneExp=franchiseId=',franchise_id))
-source_data <- fromJSON(json_file)
-franchise_team_goalie <- as.data.frame(source_data$data) #Convert to data frame
-
-json_file <- (paste0(root_url,'/franchise-skater-records?cayenneExp=franchiseId=',franchise_id))
-source_data <- fromJSON(json_file)
-franchise_team_skater <- as.data.frame(source_data$data) #Convert to data frame
+franchise_team_season <- read_json(root_url,paste0('/franchise-season-records?cayenneExp=franchiseId=',franchise_id))
+franchise_team_goalie <- read_json(root_url,paste0('/franchise-goalie-records?cayenneExp=franchiseId=',franchise_id))
+franchise_team_skater <- read_json(root_url,paste0('/franchise-skater-records?cayenneExp=franchiseId=',franchise_id))
 ```
 
 ## Basic data exploratory
@@ -232,6 +222,8 @@ ggplot(franchise_team_total,aes(gameTypeId,wins)) +
   geom_boxplot() +
   facet_grid(rows=vars(gameTypeId), labeller = label_both,scales = "free" )
 ```
+
+    ## Warning: Continuous x aesthetic -- did you forget aes(group=...)?
 
 ![](Project1_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
