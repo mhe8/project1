@@ -1,10 +1,10 @@
 ---
-title: "Project 1: Reading JSON Files in R"
+title: "Project 1: Vignettes about Reading JSON Files and analysis in R"
 author: 
 - "Min He"
 date: "June 9, 2020 (updated `r Sys.Date()`)"
-output:
-  html_document: 
+output: 
+  html_document:
     number_sections: yes
     toc: yes
     toc_depth: 3
@@ -12,7 +12,7 @@ output:
     toc_float:
       collapsed: yes
 ---
-
+  
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, eval = TRUE, message = FALSE)
 library(tidyverse)
@@ -21,18 +21,18 @@ library(dplyr)
 
 require(knitr)
 library(ggplot2)
-
-library(DT)
 ```
+
 # JSON Description
 JSON (JavaScript Object Notation) is a lightweight data-interchange format. It is easy for humans to read and write. It is easy for machines to parse and generate. JSON is common data formats used to receive data from a web server. JSON is built on two structures: 
-1. A collection of name/value pairs.
-2. An ordered list of values. 
+
++ A collection of name/value pairs.
++ An ordered list of values. 
 
 
 # Pros/Cons of Packages
 
-We chose the `jsonlite` package to read in our data [@jsonlite]. The `rjson` package was also considered, but inital attempts performed slowly and needed extra code to implement the data into a dataframe [@rjson]. The `jsonlite` package converts read data directly into a dataframes by default, while `rjson` will convert data into a list by default. Given our need to work with large data sets and to create dataframes, `jsonlite` performs better for our needs.
+We chose the `jsonlite` package to read in our data. The `rjson` package was also considered, but inital attempts needed extra code to implement the data into a dataframe. The `jsonlite` package converts read data directly into a dataframes by default, while `rjson` will convert data into a list by default. Given our need to work with dataframes, `jsonlite` performs better for our needs.
 
 
 # Data
@@ -69,9 +69,11 @@ source_data <- fromJSON(json_file)
 franchise_team_skater <- as.data.frame(source_data$data) #Convert to data frame
 
 ```
-## Create function (Creates Labels for Variable Names)
+
+## Basic data exploratory
 
 A basic exploratory data analysis.
+
 + The scatterplot between losses and home losses shows a very good linear relationship
 + The linear relationship between losses and home losses still hold within each game type.
 
@@ -79,20 +81,24 @@ A basic exploratory data analysis.
 
 ggplot(franchise_team_total,aes(losses,homeLosses)) +
   geom_point()
+```
 
-
+```{r echo=TRUE}
 ggplot(franchise_team_total,aes(losses,homeLosses)) +
   geom_point() +
   facet_grid(cols=vars(gameTypeId),scales = "free",labeller = label_both)
 ```
 
 **Take the** *franchiseId=23* **an an example, the scatterplot between most wins in one season and total wins for each team member shows some linear relationship and this relationship is better when the outlier was excluded.**
+
+
 ```{r}
-plot(franchise_team_goalie$mostWinsOneSeason, franchise_team_goalie$wins, main='Relationshio between most wins in one season\n v.s. wins for each member')
-plot(franchise_team_goalie$mostWinsOneSeason[-1], franchise_team_goalie$wins[-1], main='Relationshio between most wins in one season\n v.s. wins for each member (exclude outlier)')
+plot(franchise_team_goalie$mostWinsOneSeason, franchise_team_goalie$wins, main='Relationshio between most wins in one season\n v.s. wins for each member', xlab = 'Most win in one season', ylab='Total wins')
+plot(franchise_team_goalie$mostWinsOneSeason[-1], franchise_team_goalie$wins[-1], main='Relationshio between most wins in one season\n v.s. wins for each member (exclude outlier)', xlab = 'Most win in one season', ylab='Total wins')
 ```
 
-## Create Function (Generates Contingency Table)
+
+## Create Contingency Table
 **Show contingency table with columns of team and game type (summarise the total of wins)**
 ```{r, echo=TRUE}
 #Function creates Contingency Table
@@ -100,19 +106,24 @@ contingencyTable<-franchise_team_total %>% group_by_at(c('teamName','gameTypeId'
     summarise(wins = sum(wins)) %>% 
     spread(key = 'gameTypeId', value = "wins")
 
-# kable(contingencyTable)
-
-DT::renderDataTable({ contingencyTable },rownames= FALSE)
-
+kable(contingencyTable)
 ```
 
+# Plotting
+
+## Scatter plot by color
+
 **Scatterplot between the loss and home loss with colored by game type, the results show very good linear relationship.**
+
 ```{r}
 ggplot(franchise_team_total,aes(losses,homeLosses, color=gameTypeId)) +
   geom_point() 
 ```
 
+## Histogram plot by side by side
+
 **Plot the histogram of the wins by game type**
+
 ```{r}
 franchise_by_gametype<-franchise_team_total %>% group_by_at(c('teamName','teamId','gameTypeId')) %>% 
     summarise(wins = sum(wins), losses=sum(losses))
@@ -121,16 +132,22 @@ ggplot(franchise_by_gametype,aes(gameTypeId,wins)) +
   geom_col() 
 ```
 
+
 **Plot the histogram of the wins for each team (side by side with game type)**, *It shows that when the wins in game type=2 is high, the wins in game type=2 is also high.*
+
 ```{r}
 ggplot(franchise_by_gametype,aes(teamId,wins,gameTypeId)) +
   geom_col() +
   facet_grid(rows=vars(gameTypeId), labeller = label_both,scales = "free",)
 ```
 
+## Box plot side by side
+
 **The box plot for wins within the game type.**
+
 + We can see that the median for the game type=2 is around 650 with no outliers
 + The median for the game type=3 is around 70 with two outliers
+
 ```{r}
 
 ggplot(franchise_team_total,aes(gameTypeId,wins)) +
@@ -138,10 +155,16 @@ ggplot(franchise_team_total,aes(gameTypeId,wins)) +
   facet_grid(rows=vars(gameTypeId), labeller = label_both,scales = "free" )
 ```
 
+
+# Create new variables
+
 **Create new variable**
+
 + Over all win percent (winPercent)
 + Win percent at home (homewinPercent)
 + Scatter plot the win percent v.s. home win percent, the result shows strong linear relationship with more outliers than the scatter plot of wins v.s. homewins.
+
+
 ```{r}
 #Create new variables of home win percentage and win percentage
 franchise_team_percentage<-franchise_team_total %>% replace_na(list(wins= 0, ties = 0, losses=0, homeWins=0, homeLosses=0, homeTies=0)) %>%
